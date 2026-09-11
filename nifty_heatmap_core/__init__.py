@@ -246,3 +246,50 @@ def build_sectors(rows):
             ),
         })
     return out
+
+
+# ── Real NSE sectoral indices, mapped onto the watchlist's sector groups ─────
+# Only mappings where the index's composition genuinely matches the group are
+# listed. Every ticker below was verified to return a live name plus a real
+# regularMarketDayHigh/Low. Deliberately NOT mapped, because no NSE index
+# matches the group's actual constituents:
+#   Capital Goods, Construction, Consumer Services, Power, Services,
+#   Telecommunication, Textiles
+# Near-misses rejected on composition: Nifty Energy (oil+gas+power blend) for
+# Power, Nifty Services Sector (financials/IT/telecom) for Services, Nifty
+# Consumption (broad) for Consumer Services, Nifty Infra (broad) for
+# Construction. Also rejected as DEAD tickers - they resolve but return no
+# shortName and a frozen high==low==price: NIFTY_ENERGY.NS, NIFTY_INFRA.NS,
+# NIFTY_CONSUMPTION.NS.
+SECTOR_INDICES = {
+    "Automobile and Auto Components": {"ticker": "^CNXAUTO", "label": "NIFTY AUTO"},
+    "Chemicals": {"ticker": "NIFTY_CHEMICALS.NS", "label": "NIFTY CHEMICALS"},
+    "Construction Materials": {"ticker": "NIFTY_CEMENT.NS", "label": "NIFTY CEMENT"},
+    "Consumer Durables": {"ticker": "NIFTY_CONSR_DURBL.NS", "label": "NIFTY CONSR DURBL"},
+    "Fast Moving Consumer Goods": {"ticker": "^CNXFMCG", "label": "NIFTY FMCG"},
+    "Financial Services": {"ticker": "NIFTY_FIN_SERVICE.NS", "label": "NIFTY FIN SERVICE"},
+    "Healthcare": {"ticker": "NIFTY_HEALTHCARE.NS", "label": "NIFTY HEALTHCARE"},
+    "Information Technology": {"ticker": "^CNXIT", "label": "NIFTY IT"},
+    "Metals & Mining": {"ticker": "^CNXMETAL", "label": "NIFTY METAL"},
+    "Oil Gas & Consumable Fuels": {"ticker": "NIFTY_OIL_AND_GAS.NS", "label": "NIFTY OIL & GAS"},
+    "Realty": {"ticker": "^CNXREALTY", "label": "NIFTY REALTY"},
+}
+
+SECTOR_INDEX_TICKERS = {v["ticker"]: s for s, v in SECTOR_INDICES.items()}
+
+
+def attach_sector_indices(sectors, fetched):
+    """Attach the matching sectoral index snapshot to each sector dict.
+
+    `fetched` is {sector_name: {price, pct, pts, dayHigh, dayLow}} as returned by
+    fetch_all when given SECTOR_INDEX_TICKERS as its indices_map. Sectors with no
+    matching NSE index get index=None, which the UI renders as "no NSE index".
+    """
+    for s in sectors:
+        meta = SECTOR_INDICES.get(s["sector"])
+        snap = fetched.get(s["sector"]) if meta else None
+        if meta and snap and snap.get("price") is not None:
+            s["index"] = dict(snap, label=meta["label"], ticker=meta["ticker"])
+        else:
+            s["index"] = None
+    return sectors
