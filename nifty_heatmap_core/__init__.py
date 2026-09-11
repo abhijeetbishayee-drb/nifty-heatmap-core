@@ -214,6 +214,69 @@ FNO_ALL = [t for syms in FNO_SECTORS.values() for t in syms]
 SECTOR_OF = {t: sector for sector, syms in FNO_SECTORS.items() for t in syms}
 
 
+
+def _prev_close(r):
+    """Previous close implied by the snapshot: price - fulldayChange, falling
+    back to price / (1 + pct/100)."""
+    price = r.get("price")
+    if price is None:
+        return None
+    pts = r.get("pts")
+    if pts is not None:
+        prev = price - pts
+        return prev if prev > 0 else None
+    pct = r.get("pct")
+    if pct is None or pct <= -100:
+        return None
+    prev = price / (1 + pct / 100)
+    return prev if prev > 0 else None
+
+
+def constituent_range(rows):
+    """Equal-weighted day range built from the sector's own constituents, for
+    groups with no matching NSE sectoral index.
+
+    Each stock's day low and high are expressed as a % move from that stock's
+    own previous close, then averaged with equal weight - the same weighting as
+    avgPct, so avgPct is always inside [lowPct, highPct] by construction.
+
+    This is an ENVELOPE of the constituents' individual day ranges, not the
+    range a real equal-weighted index would have printed: it treats every
+    stock's low as simultaneous (and every high likewise), which no index does.
+    Read it as "how far the average name in this sector travelled today", and
+    label it as such in any UI - never present it as an index.
+
+    A one-constituent sector (Textiles holds only PAGEIND) returns that stock's
+    own day range, which is correct - `basis` reports the sample size so the UI
+    can say so.
+    """
+    lows, highs, curs = [], [], []
+    for r in rows:
+        prev = _prev_close(r)
+        if prev is None:
+            continue
+        lo, hi, pct = r.get("dayLow"), r.get("dayHigh"), r.get("pct")
+        if lo is None or hi is None or pct is None:
+            continue
+        lows.append((lo - prev) / prev * 100)
+        highs.append((hi - prev) / prev * 100)
+        curs.append(pct)
+
+    if not curs:
+        return None
+    low_pct = sum(lows) / len(lows)
+    high_pct = sum(highs) / len(highs)
+    cur_pct = sum(curs) / len(curs)
+    if high_pct <= low_pct:
+        return None
+    return {
+        "lowPct": low_pct,
+        "highPct": high_pct,
+        "curPct": cur_pct,
+        "basis": len(curs),
+    }
+
+
 def build_sectors(rows):
     """Group `rows` (from build_rows) by sector and compute per-sector aggregates.
 
@@ -236,6 +299,7 @@ def build_sectors(rows):
             "sector": sector,
             "count": len(srows),
             "avgPct": avg,
+            "constituentRange": constituent_range(srows),
             "up": sum(1 for v in vals if v > 0),
             "down": sum(1 for v in vals if v < 0),
             "flat": sum(1 for v in vals if v == 0),
