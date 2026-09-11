@@ -117,3 +117,132 @@ def compute_movers(rows, n=5):
     gainers = sorted(valid_low, key=lambda r: r["offLow"], reverse=True)[:n]
     losers = sorted(valid_high, key=lambda r: r["offHigh"])[:n]
     return gainers, losers
+
+
+# ── NSE F&O universe, grouped by sector ──────────────────────────────────────
+# Source: the user's Kite marketwatch "NSE F&O Stocks (Grouped by sector)".
+# NOTE: that export declared 210 names (Financial Services 55) but only 209 rows
+# survived the copy out of Kite — Financial Services here holds 54. Adding the
+# missing symbol is a one-line change below.
+
+FNO_SECTORS = {
+    "Automobile and Auto Components": [
+        "MARUTI.NS", "M&M.NS", "BAJAJ-AUTO.NS", "EICHERMOT.NS", "TVSMOTOR.NS", "HYUNDAI.NS",
+        "MOTHERSON.NS", "BOSCHLTD.NS", "TMPV.NS", "HEROMOTOCO.NS", "BHARATFORG.NS",
+        "UNOMINDA.NS", "ATHERENERG.NS", "TIINDIA.NS", "SONACOMS.NS", "FORCEMOT.NS",
+    ],
+    "Capital Goods": [
+        "HAL.NS", "BEL.NS", "ABB.NS", "BHEL.NS", "CGPOWER.NS", "CUMMINSIND.NS", "SIEMENS.NS",
+        "POWERINDIA.NS", "POLYCAB.NS", "GVT&D.NS", "ASHOKLEY.NS", "MAZDOCK.NS", "WAAREEENER.NS",
+        "SUZLON.NS", "APLAPOLLO.NS", "SUPREMEIND.NS", "KEI.NS", "PREMIERENE.NS", "BDL.NS",
+        "COCHINSHIP.NS", "ASTRAL.NS", "KAYNES.NS", "INOXWIND.NS",
+    ],
+    "Chemicals": [
+        "SOLARINDS.NS", "PIDILITIND.NS", "SRF.NS", "UPL.NS", "PIIND.NS",
+    ],
+    "Construction": [
+        "LT.NS", "RVNL.NS", "NBCC.NS",
+    ],
+    "Construction Materials": [
+        "ULTRACEMCO.NS", "GRASIM.NS", "AMBUJACEM.NS", "SHREECEM.NS",
+    ],
+    "Consumer Durables": [
+        "TITAN.NS", "ASIANPAINT.NS", "DIXON.NS", "HAVELLS.NS", "KALYANKJIL.NS", "VOLTAS.NS",
+        "BLUESTARCO.NS", "AMBER.NS", "PGEL.NS", "CROMPTON.NS",
+    ],
+    "Consumer Services": [
+        "ETERNAL.NS", "DMART.NS", "TRENT.NS", "INDHOTEL.NS", "NYKAA.NS", "NAUKRI.NS",
+        "SWIGGY.NS", "VMM.NS", "JUBLFOOD.NS",
+    ],
+    "Fast Moving Consumer Goods": [
+        "HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS", "VBL.NS", "BRITANNIA.NS", "MARICO.NS",
+        "UNITDSPR.NS", "TATACONSUM.NS", "GODREJCP.NS", "DABUR.NS", "RADICO.NS", "COLPAL.NS",
+        "PATANJALI.NS", "GODFRYPHLP.NS",
+    ],
+    "Financial Services": [
+        "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "BAJFINANCE.NS", "LICI.NS", "KOTAKBANK.NS",
+        "AXISBANK.NS", "BAJAJFINSV.NS", "SHRIRAMFIN.NS", "SBILIFE.NS", "CHOLAFIN.NS",
+        "JIOFIN.NS", "UNIONBANK.NS", "PNB.NS", "BANKBARODA.NS", "BAJAJHLDNG.NS", "PFC.NS",
+        "INDIANB.NS", "HDFCLIFE.NS", "MUTHOOTFIN.NS", "CANBK.NS", "PAYTM.NS", "ABCAPITAL.NS",
+        "IRFC.NS", "HDFCAMC.NS", "FEDERALBNK.NS", "MCX.NS", "POLICYBZR.NS", "RECLTD.NS",
+        "AUBANK.NS", "LTF.NS", "INDUSINDBK.NS", "NAM-INDIA.NS", "IDFCFIRSTB.NS", "ICICIGI.NS",
+        "YESBANK.NS", "ICICIPRULI.NS", "MAHABANK.NS", "BANKINDIA.NS", "RBLBANK.NS",
+        "SBICARD.NS", "MOTILALOFS.NS", "MFSL.NS", "IREDA.NS", "MANAPPURAM.NS", "PNBHOUSING.NS",
+        "LICHSGFIN.NS", "BANDHANBNK.NS", "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS", "IEX.NS",
+        "BSE.NS", "CDSL.NS",
+    ],
+    "Healthcare": [
+        "SUNPHARMA.NS", "DIVISLAB.NS", "TORNTPHARM.NS", "APOLLOHOSP.NS", "ZYDUSLIFE.NS",
+        "CIPLA.NS", "LAURUSLABS.NS", "MAXHEALTH.NS", "AUROPHARMA.NS", "DRREDDY.NS", "LUPIN.NS",
+        "MANKIND.NS", "GLENMARK.NS", "FORTIS.NS", "BIOCON.NS", "ALKEM.NS",
+    ],
+    "Information Technology": [
+        "TCS.NS", "INFY.NS", "HCLTECH.NS", "WIPRO.NS", "TECHM.NS", "LTM.NS", "OFSS.NS",
+        "PERSISTENT.NS", "COFORGE.NS", "MPHASIS.NS", "TATAELXSI.NS", "SAGILITY.NS",
+        "KPITTECH.NS",
+    ],
+    "Metals & Mining": [
+        "ADANIENT.NS", "JSWSTEEL.NS", "HINDZINC.NS", "TATASTEEL.NS", "HINDALCO.NS",
+        "JINDALSTEL.NS", "VEDL.NS", "SAIL.NS", "NMDC.NS", "NATIONALUM.NS",
+    ],
+    "Oil Gas & Consumable Fuels": [
+        "RELIANCE.NS", "ONGC.NS", "COALINDIA.NS", "IOC.NS", "BPCL.NS", "GAIL.NS", "OIL.NS",
+        "HINDPETRO.NS", "PETRONET.NS",
+    ],
+    "Power": [
+        "ADANIPOWER.NS", "NTPC.NS", "POWERGRID.NS", "ADANIGREEN.NS", "ADANIENSOL.NS",
+        "TATAPOWER.NS", "JSWENERGY.NS", "NHPC.NS",
+    ],
+    "Realty": [
+        "DLF.NS", "LODHA.NS", "PHOENIXLTD.NS", "PRESTIGE.NS", "OBEROIRLTY.NS", "GODREJPROP.NS",
+    ],
+    "Services": [
+        "ADANIPORTS.NS", "INDIGO.NS", "GMRAIRPORT.NS", "CONCOR.NS", "DELHIVERY.NS",
+    ],
+    "Telecommunication": [
+        "BHARTIARTL.NS", "IDEA.NS", "INDUSTOWER.NS",
+    ],
+    "Textiles": [
+        "PAGEIND.NS",
+    ],
+}
+
+
+# Flat list of every F&O ticker, sector order preserved.
+FNO_ALL = [t for syms in FNO_SECTORS.values() for t in syms]
+
+SECTOR_OF = {t: sector for sector, syms in FNO_SECTORS.items() for t in syms}
+
+
+def build_sectors(rows):
+    """Group `rows` (from build_rows) by sector and compute per-sector aggregates.
+
+    Aggregates are EQUAL-WEIGHTED across constituents that have data - this is a
+    breadth measure of the sector's F&O names, not the official sector index.
+
+    Returns a list of dicts, each: {sector, count, avgPct, up, down, flat, rows}.
+    """
+    by_sector = {sector: [] for sector in FNO_SECTORS}
+    for r in rows:
+        sector = SECTOR_OF.get(r["ticker"])
+        if sector is not None:
+            by_sector[sector].append(r)
+
+    out = []
+    for sector, srows in by_sector.items():
+        vals = [r["pct"] for r in srows if r.get("pct") is not None]
+        avg = sum(vals) / len(vals) if vals else None
+        out.append({
+            "sector": sector,
+            "count": len(srows),
+            "avgPct": avg,
+            "up": sum(1 for v in vals if v > 0),
+            "down": sum(1 for v in vals if v < 0),
+            "flat": sum(1 for v in vals if v == 0),
+            "rows": sorted(
+                srows,
+                key=lambda r: (r["pct"] if r.get("pct") is not None else -999),
+                reverse=True,
+            ),
+        })
+    return out
