@@ -277,6 +277,30 @@ def constituent_range(rows):
     }
 
 
+
+def summarize_group(name, srows):
+    """Aggregate a set of rows into the block shape the boards render:
+    equal-weighted average, breadth counts, constituent day range and the rows
+    sorted by session change. Used for both sectors and the pinned index
+    groups so the two can never diverge."""
+    vals = [r["pct"] for r in srows if r.get("pct") is not None]
+    avg = sum(vals) / len(vals) if vals else None
+    return {
+        "sector": name,
+        "count": len(srows),
+        "avgPct": avg,
+        "constituentRange": constituent_range(srows),
+        "up": sum(1 for v in vals if v > 0),
+        "down": sum(1 for v in vals if v < 0),
+        "flat": sum(1 for v in vals if v == 0),
+        "rows": sorted(
+            srows,
+            key=lambda r: (r["pct"] if r.get("pct") is not None else -999),
+            reverse=True,
+        ),
+    }
+
+
 def build_sectors(rows):
     """Group `rows` (from build_rows) by sector and compute per-sector aggregates.
 
@@ -291,25 +315,7 @@ def build_sectors(rows):
         if sector is not None:
             by_sector[sector].append(r)
 
-    out = []
-    for sector, srows in by_sector.items():
-        vals = [r["pct"] for r in srows if r.get("pct") is not None]
-        avg = sum(vals) / len(vals) if vals else None
-        out.append({
-            "sector": sector,
-            "count": len(srows),
-            "avgPct": avg,
-            "constituentRange": constituent_range(srows),
-            "up": sum(1 for v in vals if v > 0),
-            "down": sum(1 for v in vals if v < 0),
-            "flat": sum(1 for v in vals if v == 0),
-            "rows": sorted(
-                srows,
-                key=lambda r: (r["pct"] if r.get("pct") is not None else -999),
-                reverse=True,
-            ),
-        })
-    return out
+    return [summarize_group(sector, srows) for sector, srows in by_sector.items()]
 
 
 # ── Real NSE sectoral indices, mapped onto the watchlist's sector groups ─────
@@ -357,3 +363,45 @@ def attach_sector_indices(sectors, fetched):
         else:
             s["index"] = None
     return sectors
+
+
+# ── Pinned index groups, always shown above the sectors ──────────────────────
+# NIFTY BANK constituents as of 2026-09-15. NSE rebalances its indices
+# semi-annually (March/September), so this list needs a review after each
+# reconstitution - a stale entry would quietly show the wrong basket. Every
+# name here is already inside FNO_ALL, so pinning them costs no extra fetch.
+BANKNIFTY = [
+    "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "AXISBANK.NS", "KOTAKBANK.NS",
+    "INDUSINDBK.NS", "BANKBARODA.NS", "PNB.NS", "CANBK.NS", "FEDERALBNK.NS",
+    "IDFCFIRSTB.NS", "AUBANK.NS",
+]
+
+PINNED_GROUPS = [
+    {"name": "NIFTY 50", "tickers": NIFTY50, "index_key": "nifty",
+     "label": "NIFTY 50", "ticker": "^NSEI"},
+    {"name": "BANK NIFTY", "tickers": BANKNIFTY, "index_key": "banknifty",
+     "label": "NIFTY BANK", "ticker": "^NSEBANK"},
+]
+
+
+def build_pinned_groups(rows, fetched):
+    """Build the NIFTY 50 and BANK NIFTY blocks from rows already fetched for
+    the F&O sweep, attaching each one's real headline index.
+
+    `fetched` is fetch_all's index map, keyed "nifty"/"banknifty".
+    """
+    by_ticker = {r["ticker"]: r for r in rows}
+    out = []
+    for g in PINNED_GROUPS:
+        grows = [by_ticker[t] for t in g["tickers"] if t in by_ticker]
+        if not grows:
+            continue
+        block = summarize_group(g["name"], grows)
+        snap = fetched.get(g["index_key"])
+        block["index"] = (
+            dict(snap, label=g["label"], ticker=g["ticker"])
+            if snap and snap.get("price") is not None else None
+        )
+        block["pinned"] = True
+        out.append(block)
+    return out
