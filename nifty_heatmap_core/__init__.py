@@ -28,6 +28,17 @@ HEADERS = {
 }
 
 
+# Names carried on this board that do NOT trade in F&O. Each was checked
+# against NSE's derivatives list via the Kite instrument API and returns zero
+# futures/options. The UI marks their tiles so a cash-only name is never
+# mistaken for something you can take a derivatives position in.
+CASH_ONLY = frozenset({
+    "BEML.NS", "GRSE.NS", "DATAPATTNS.NS", "ZENTEC.NS", "PARAS.NS",
+    "ASTRAMICRO.NS", "MTARTECH.NS", "CYIENTDLM.NS", "MEESHO.NS", "LENSKART.NS",
+    "SYNGENE.NS", "PPLPHARMA.NS", "ARVIND.NS", "PGIL.NS", "GOKEX.NS",
+})
+
+
 def short_name(ticker):
     return ticker.replace(".NS", "").replace("-", "")[:10]
 
@@ -105,6 +116,7 @@ def build_rows(tickers, stocks):
             "offHigh": off_high,
             "dayHigh": day_high,
             "dayLow": day_low,
+            "cashOnly": ticker in CASH_ONLY,
         })
     return rows
 
