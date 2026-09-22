@@ -169,8 +169,8 @@ FNO_SECTORS = {
     ],
     "Financial Services": [
         "LICI.NS", "BAJAJFINSV.NS", "SBILIFE.NS", "HDFCLIFE.NS", "HDFCAMC.NS", "MCX.NS",
-        "POLICYBZR.NS", "NAM-INDIA.NS", "ICICIGI.NS", "ICICIPRULI.NS", "MOTILALOFS.NS",
-        "MFSL.NS", "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS", "IEX.NS", "BSE.NS", "CDSL.NS",
+        "NAM-INDIA.NS", "ICICIGI.NS", "ICICIPRULI.NS", "MOTILALOFS.NS", "MFSL.NS",
+        "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS", "IEX.NS", "BSE.NS", "CDSL.NS",
     ],
     "Capital Goods": [
         "ABB.NS", "BHEL.NS", "CGPOWER.NS", "CUMMINSIND.NS", "SIEMENS.NS", "POWERINDIA.NS",
@@ -196,10 +196,11 @@ FNO_SECTORS = {
         "BLUESTARCO.NS", "AMBER.NS", "PGEL.NS", "CROMPTON.NS",
     ],
     "Consumer Services": [
-        "DMART.NS", "TRENT.NS", "INDHOTEL.NS", "NYKAA.NS", "NAUKRI.NS", "VMM.NS", "JUBLFOOD.NS",
+        "DMART.NS", "TRENT.NS", "INDHOTEL.NS", "NAUKRI.NS", "VMM.NS", "JUBLFOOD.NS",
     ],
     "New Age Stocks": [
-        "ETERNAL.NS", "SWIGGY.NS", "PAYTM.NS", "MEESHO.NS", "LENSKART.NS",
+        "ETERNAL.NS", "SWIGGY.NS", "PAYTM.NS", "MEESHO.NS", "LENSKART.NS", "NYKAA.NS",
+        "POLICYBZR.NS",
     ],
     "Fast Moving Consumer Goods": [
         "HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS", "VBL.NS", "BRITANNIA.NS", "MARICO.NS",
