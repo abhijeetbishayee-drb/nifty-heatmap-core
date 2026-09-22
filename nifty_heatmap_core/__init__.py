@@ -119,26 +119,59 @@ def compute_movers(rows, n=5):
     return gainers, losers
 
 
-# ── NSE F&O universe, grouped by sector ──────────────────────────────────────
-# Source: the user's Kite marketwatch "NSE F&O Stocks (Grouped by sector)".
-# NOTE: that export declared 210 names (Financial Services 55) but only 209 rows
-# survived the copy out of Kite — Financial Services here holds 54. Adding the
-# missing symbol is a one-line change below.
-
+# ── Sector universe ─────────────────────────────────────────────────────────
+# Seeded from the user's Kite marketwatch "NSE F&O Stocks (Grouped by sector)"
+# (209 names / 18 sectors), then reshaped by hand on 2026-09-22:
+#   - Defence split out of Capital Goods + Chemicals and broadened
+#   - Financial Services split into Banks / NBFCs / (insurance, AMCs, exchanges)
+#   - New Age Stocks and CDMO carved out of Consumer Services / Financials / Healthcare
+#   - Textiles widened past PAGEIND using the user's peer-comparison screenshot
+#
+# NOT every ticker here trades in F&O any more. These 15 were each checked
+# against NSE's derivatives list via the Kite instrument API and return ZERO
+# futures/options - they are cash-only and were added deliberately:
+#   BEML, GRSE, DATAPATTNS, ZENTEC, PARAS, ASTRAMICRO, MTARTECH, CYIENTDLM,
+#   MEESHO, LENSKART, SYNGENE, PPLPHARMA, ARVIND, PGIL, GOKEX
+# So this is a curated sector view, not NSE's official classification, and the
+# name FNO_SECTORS is now historical.
+#
+# The original Kite export declared 210 names but only 209 survived the copy
+# (Financial Services 55 declared / 54 present); that one name was never
+# identified and is still absent.
 FNO_SECTORS = {
     "Automobile and Auto Components": [
         "MARUTI.NS", "M&M.NS", "BAJAJ-AUTO.NS", "EICHERMOT.NS", "TVSMOTOR.NS", "HYUNDAI.NS",
         "MOTHERSON.NS", "BOSCHLTD.NS", "TMPV.NS", "HEROMOTOCO.NS", "BHARATFORG.NS",
         "UNOMINDA.NS", "ATHERENERG.NS", "TIINDIA.NS", "SONACOMS.NS", "FORCEMOT.NS",
     ],
+    "Banks": [
+        "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS", "AXISBANK.NS",
+        "INDUSINDBK.NS", "BANKBARODA.NS", "PNB.NS", "CANBK.NS", "UNIONBANK.NS", "INDIANB.NS",
+        "FEDERALBNK.NS", "AUBANK.NS", "IDFCFIRSTB.NS", "YESBANK.NS", "MAHABANK.NS",
+        "BANKINDIA.NS", "RBLBANK.NS", "BANDHANBNK.NS",
+    ],
+    "NBFCs": [
+        "BAJFINANCE.NS", "SHRIRAMFIN.NS", "CHOLAFIN.NS", "MUTHOOTFIN.NS", "MANAPPURAM.NS",
+        "PFC.NS", "RECLTD.NS", "IRFC.NS", "IREDA.NS", "LTF.NS", "SBICARD.NS", "PNBHOUSING.NS",
+        "LICHSGFIN.NS", "JIOFIN.NS", "ABCAPITAL.NS", "BAJAJHLDNG.NS",
+    ],
+    "Financial Services": [
+        "LICI.NS", "BAJAJFINSV.NS", "SBILIFE.NS", "HDFCLIFE.NS", "HDFCAMC.NS", "MCX.NS",
+        "POLICYBZR.NS", "NAM-INDIA.NS", "ICICIGI.NS", "ICICIPRULI.NS", "MOTILALOFS.NS",
+        "MFSL.NS", "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS", "IEX.NS", "BSE.NS", "CDSL.NS",
+    ],
     "Capital Goods": [
-        "HAL.NS", "BEL.NS", "ABB.NS", "BHEL.NS", "CGPOWER.NS", "CUMMINSIND.NS", "SIEMENS.NS",
-        "POWERINDIA.NS", "POLYCAB.NS", "GVT&D.NS", "ASHOKLEY.NS", "MAZDOCK.NS", "WAAREEENER.NS",
-        "SUZLON.NS", "APLAPOLLO.NS", "SUPREMEIND.NS", "KEI.NS", "PREMIERENE.NS", "BDL.NS",
-        "COCHINSHIP.NS", "ASTRAL.NS", "KAYNES.NS", "INOXWIND.NS",
+        "ABB.NS", "BHEL.NS", "CGPOWER.NS", "CUMMINSIND.NS", "SIEMENS.NS", "POWERINDIA.NS",
+        "POLYCAB.NS", "GVT&D.NS", "ASHOKLEY.NS", "WAAREEENER.NS", "SUZLON.NS", "APLAPOLLO.NS",
+        "SUPREMEIND.NS", "KEI.NS", "PREMIERENE.NS", "ASTRAL.NS", "KAYNES.NS", "INOXWIND.NS",
+    ],
+    "Defence": [
+        "HAL.NS", "BEL.NS", "MAZDOCK.NS", "BDL.NS", "COCHINSHIP.NS", "SOLARINDS.NS", "BEML.NS",
+        "GRSE.NS", "DATAPATTNS.NS", "ZENTEC.NS", "PARAS.NS", "ASTRAMICRO.NS", "MTARTECH.NS",
+        "CYIENTDLM.NS",
     ],
     "Chemicals": [
-        "SOLARINDS.NS", "PIDILITIND.NS", "SRF.NS", "UPL.NS", "PIIND.NS",
+        "PIDILITIND.NS", "SRF.NS", "UPL.NS", "PIIND.NS",
     ],
     "Construction": [
         "LT.NS", "RVNL.NS", "NBCC.NS",
@@ -151,30 +184,23 @@ FNO_SECTORS = {
         "BLUESTARCO.NS", "AMBER.NS", "PGEL.NS", "CROMPTON.NS",
     ],
     "Consumer Services": [
-        "ETERNAL.NS", "DMART.NS", "TRENT.NS", "INDHOTEL.NS", "NYKAA.NS", "NAUKRI.NS",
-        "SWIGGY.NS", "VMM.NS", "JUBLFOOD.NS",
+        "DMART.NS", "TRENT.NS", "INDHOTEL.NS", "NYKAA.NS", "NAUKRI.NS", "VMM.NS", "JUBLFOOD.NS",
+    ],
+    "New Age Stocks": [
+        "ETERNAL.NS", "SWIGGY.NS", "PAYTM.NS", "MEESHO.NS", "LENSKART.NS",
     ],
     "Fast Moving Consumer Goods": [
         "HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS", "VBL.NS", "BRITANNIA.NS", "MARICO.NS",
         "UNITDSPR.NS", "TATACONSUM.NS", "GODREJCP.NS", "DABUR.NS", "RADICO.NS", "COLPAL.NS",
         "PATANJALI.NS", "GODFRYPHLP.NS",
     ],
-    "Financial Services": [
-        "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "BAJFINANCE.NS", "LICI.NS", "KOTAKBANK.NS",
-        "AXISBANK.NS", "BAJAJFINSV.NS", "SHRIRAMFIN.NS", "SBILIFE.NS", "CHOLAFIN.NS",
-        "JIOFIN.NS", "UNIONBANK.NS", "PNB.NS", "BANKBARODA.NS", "BAJAJHLDNG.NS", "PFC.NS",
-        "INDIANB.NS", "HDFCLIFE.NS", "MUTHOOTFIN.NS", "CANBK.NS", "PAYTM.NS", "ABCAPITAL.NS",
-        "IRFC.NS", "HDFCAMC.NS", "FEDERALBNK.NS", "MCX.NS", "POLICYBZR.NS", "RECLTD.NS",
-        "AUBANK.NS", "LTF.NS", "INDUSINDBK.NS", "NAM-INDIA.NS", "IDFCFIRSTB.NS", "ICICIGI.NS",
-        "YESBANK.NS", "ICICIPRULI.NS", "MAHABANK.NS", "BANKINDIA.NS", "RBLBANK.NS",
-        "SBICARD.NS", "MOTILALOFS.NS", "MFSL.NS", "IREDA.NS", "MANAPPURAM.NS", "PNBHOUSING.NS",
-        "LICHSGFIN.NS", "BANDHANBNK.NS", "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS", "IEX.NS",
-        "BSE.NS", "CDSL.NS",
-    ],
     "Healthcare": [
-        "SUNPHARMA.NS", "DIVISLAB.NS", "TORNTPHARM.NS", "APOLLOHOSP.NS", "ZYDUSLIFE.NS",
-        "CIPLA.NS", "LAURUSLABS.NS", "MAXHEALTH.NS", "AUROPHARMA.NS", "DRREDDY.NS", "LUPIN.NS",
-        "MANKIND.NS", "GLENMARK.NS", "FORTIS.NS", "BIOCON.NS", "ALKEM.NS",
+        "SUNPHARMA.NS", "TORNTPHARM.NS", "APOLLOHOSP.NS", "ZYDUSLIFE.NS", "CIPLA.NS",
+        "MAXHEALTH.NS", "AUROPHARMA.NS", "DRREDDY.NS", "LUPIN.NS", "MANKIND.NS", "GLENMARK.NS",
+        "FORTIS.NS", "BIOCON.NS", "ALKEM.NS",
+    ],
+    "CDMO": [
+        "DIVISLAB.NS", "LAURUSLABS.NS", "SYNGENE.NS", "PPLPHARMA.NS",
     ],
     "Information Technology": [
         "TCS.NS", "INFY.NS", "HCLTECH.NS", "WIPRO.NS", "TECHM.NS", "LTM.NS", "OFSS.NS",
@@ -203,7 +229,7 @@ FNO_SECTORS = {
         "BHARTIARTL.NS", "IDEA.NS", "INDUSTOWER.NS",
     ],
     "Textiles": [
-        "PAGEIND.NS",
+        "PAGEIND.NS", "ARVIND.NS", "PGIL.NS", "GOKEX.NS",
     ],
 }
 
@@ -323,8 +349,15 @@ def build_sectors(rows):
 # listed. Every ticker below was verified to return a live name plus a real
 # regularMarketDayHigh/Low. Deliberately NOT mapped, because no NSE index
 # matches the group's actual constituents:
-#   Capital Goods, Construction, Consumer Services, Power, Services,
-#   Telecommunication, Textiles
+#   Capital Goods, CDMO, Construction, Consumer Services, Financial Services,
+#   NBFCs, New Age Stocks, Power, Services, Telecommunication, Textiles
+#
+# "Financial Services" deliberately LOST its NIFTY FIN SERVICE mapping on
+# 2026-09-22 when Banks and NBFCs were split out: that index is ~70% banks, so
+# it no longer describes the insurance/AMC/exchange remainder it would sit
+# against. NIFTY BANK moved onto the new Banks group instead. There is no
+# ex-bank financials index on Yahoo (NIFTY_FIN_EXBNK / NIFTY_FINSRV_EXBNK both
+# 404), so NBFCs falls back to its constituent range.
 # Near-misses rejected on composition: Nifty Energy (oil+gas+power blend) for
 # Power, Nifty Services Sector (financials/IT/telecom) for Services, Nifty
 # Consumption (broad) for Consumer Services, Nifty Infra (broad) for
@@ -337,7 +370,8 @@ SECTOR_INDICES = {
     "Construction Materials": {"ticker": "NIFTY_CEMENT.NS", "label": "NIFTY CEMENT"},
     "Consumer Durables": {"ticker": "NIFTY_CONSR_DURBL.NS", "label": "NIFTY CONSR DURBL"},
     "Fast Moving Consumer Goods": {"ticker": "^CNXFMCG", "label": "NIFTY FMCG"},
-    "Financial Services": {"ticker": "NIFTY_FIN_SERVICE.NS", "label": "NIFTY FIN SERVICE"},
+    "Banks": {"ticker": "^NSEBANK", "label": "NIFTY BANK"},
+    "Defence": {"ticker": "NIFTY_IND_DEFENCE.NS", "label": "NIFTY IND DEFENCE"},
     "Healthcare": {"ticker": "NIFTY_HEALTHCARE.NS", "label": "NIFTY HEALTHCARE"},
     "Information Technology": {"ticker": "^CNXIT", "label": "NIFTY IT"},
     "Metals & Mining": {"ticker": "^CNXMETAL", "label": "NIFTY METAL"},
