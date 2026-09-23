@@ -36,6 +36,7 @@ CASH_ONLY = frozenset({
     "BEML.NS", "GRSE.NS", "DATAPATTNS.NS", "ZENTEC.NS", "PARAS.NS",
     "ASTRAMICRO.NS", "MTARTECH.NS", "CYIENTDLM.NS", "MEESHO.NS", "LENSKART.NS",
     "SYNGENE.NS", "PPLPHARMA.NS", "ARVIND.NS", "PGIL.NS", "GOKEX.NS",
+    "HINDCOPPER.NS", "VAML.NS",
 })
 
 
@@ -222,7 +223,8 @@ FNO_SECTORS = {
     ],
     "Metals & Mining": [
         "ADANIENT.NS", "JSWSTEEL.NS", "HINDZINC.NS", "TATASTEEL.NS", "HINDALCO.NS",
-        "JINDALSTEL.NS", "VEDL.NS", "SAIL.NS", "NMDC.NS", "NATIONALUM.NS",
+        "JINDALSTEL.NS", "VEDL.NS", "SAIL.NS", "NMDC.NS", "NATIONALUM.NS", "HINDCOPPER.NS",
+        "VAML.NS",
     ],
     "Oil Gas & Consumable Fuels": [
         "RELIANCE.NS", "ONGC.NS", "COALINDIA.NS", "IOC.NS", "BPCL.NS", "GAIL.NS", "OIL.NS",
