@@ -149,8 +149,10 @@ def compute_movers(rows, n=5):
 # name FNO_SECTORS is now historical.
 #
 # The original Kite export declared 210 names but only 209 survived the copy
-# (Financial Services 55 declared / 54 present); that one name was never
-# identified and is still absent.
+# (Financial Services 55 declared / 54 present). RESOLVED 2026-09-26: the missing
+# name was 360ONE, found by diffing this taxonomy against the NSE F&O bhavcopy's
+# own stock-futures list. Added below, bringing Financial Services to 18 and the
+# F&O-tradable total to 210.
 FNO_SECTORS = {
     "Automobile and Auto Components": [
         "MARUTI.NS", "M&M.NS", "BAJAJ-AUTO.NS", "EICHERMOT.NS", "TVSMOTOR.NS", "HYUNDAI.NS",
@@ -172,6 +174,7 @@ FNO_SECTORS = {
         "LICI.NS", "BAJAJFINSV.NS", "SBILIFE.NS", "HDFCLIFE.NS", "HDFCAMC.NS", "MCX.NS",
         "NAM-INDIA.NS", "ICICIGI.NS", "ICICIPRULI.NS", "MOTILALOFS.NS", "MFSL.NS",
         "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS", "IEX.NS", "BSE.NS", "CDSL.NS",
+        "360ONE.NS",
     ],
     "Capital Goods": [
         "ABB.NS", "BHEL.NS", "CGPOWER.NS", "CUMMINSIND.NS", "SIEMENS.NS", "POWERINDIA.NS",
