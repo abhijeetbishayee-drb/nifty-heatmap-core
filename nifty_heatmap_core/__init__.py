@@ -2,6 +2,8 @@
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from .corporate_actions import live_adjustment
+
 import requests
 
 NIFTY50 = [
@@ -98,13 +100,38 @@ def fetch_all(tickers, indices_map=None, timeout=10, on_error=None, max_workers=
     return stocks, indices
 
 
-def build_rows(tickers, stocks):
+def build_rows(tickers, stocks, today=None):
     """Turn a {ticker: (price, pct, pts, day_high, day_low)} map into the row
-    shape both apps compute gainers/losers from."""
+    shape both apps compute gainers/losers from.
+
+    A name trading ex a corporate action is corrected here, at source, so that
+    every consumer - tiles, sector averages, movers, day-range bars - reads the
+    like-for-like number instead of the ex-date cliff. Yahoo does not adjust
+    the previous close, so VEDL's snapshot on 2026-04-30 would otherwise print
+    -64.9%, top the losers by 58pp and drag Metals & Mining 5.4pp into last
+    place on a day nothing happened. The raw print is kept in `ca.rawPct` so
+    the UI can label the tile rather than silently rewrite it.
+    """
     rows = []
     for ticker in tickers:
         price, pct, pts, day_high, day_low = stocks.get(
             ticker, (None, None, None, None, None))
+        ca = None
+        prev = None
+        if price is not None:
+            if pts is not None:
+                prev = price - pts
+            elif pct is not None and pct > -100:
+                prev = price / (1 + pct / 100)
+        adj = live_adjustment(ticker, price, prev, today=today)
+        if adj is not None:
+            ca = {"what": adj["what"], "kind": adj["kind"],
+                  "date": adj["date"], "rawPct": adj["rawPct"],
+                  "adjusted": adj["pct"] is not None}
+            # None for a demerger: the sector average, the constituent range
+            # and any consumer that checks for None then skip the name for
+            # that session instead of averaging in a meaningless figure.
+            pct, pts = adj["pct"], adj["pts"]
         off_low = (price - day_low) / day_low * 100 if price is not None and day_low else None
         off_high = (price - day_high) / day_high * 100 if price is not None and day_high else None
         rows.append({
@@ -118,6 +145,7 @@ def build_rows(tickers, stocks):
             "dayHigh": day_high,
             "dayLow": day_low,
             "cashOnly": ticker in CASH_ONLY,
+            "ca": ca,
         })
     return rows
 
