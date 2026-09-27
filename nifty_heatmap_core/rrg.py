@@ -32,8 +32,31 @@ from datetime import datetime, timezone
 # z-score window; tail is how many trailing points the chart draws.
 # vol_win / ann drive the Z axis of the 3D view: trailing realised volatility
 # over vol_win bars, annualised by sqrt(ann).
-DAILY = {"n_short": 10, "n_long": 30, "norm": 250, "tail": 12,
+# THE COMMON WINDOW IS SET BY THE SHORTEST HISTORY WE CHOOSE TO ADMIT, and
+# that is a real trade, not a free parameter. Every symbol shares one window
+# (see THE NORMALISATION TRAP below), so admitting a recent listing shortens
+# the window for EVERYBODY.
+#
+# daily norm was 250 and is 150, taken deliberately on 2026-09-27 to admit
+# MEESHO (201 bars, listed 2025-12-10) and LENSKART (223, 2025-11-10):
+#   min_bars = n_long 30 + norm + tail 12, so norm 150 needs 192 bars.
+# Measured cost of the change across the 222 names on both boards: 27 changed
+# quadrant, but ALL 27 sat within 0.50 of an axis and 25 within 0.30 - median
+# distance to the nearest axis 0.069 for the flippers against 0.358 for
+# everyone else. So the reshuffle is confined to names hovering on the
+# crosshair, whose quadrant was never a firm claim; nothing deep in a quadrant
+# moved. Median |RS-Ratio| shift 0.198, p90 0.472.
+#
+# The floor this sets: admitting anything shorter than ~192 bars means cutting
+# norm again for all 227 names. VAML (75 bars) and post-demerger VEDL (103)
+# are below it and stay out by design.
+DAILY = {"n_short": 10, "n_long": 30, "norm": 150, "tail": 12,
          "vol_win": 60, "ann": 252, "ret_win": 12}
+# WEEKLY is unchanged, and no window would help a 2025 listing here: n_long
+# is 30 WEEKS, so a symbol needs n_long + tail = 42 weekly bars before any
+# normalisation window at all. MEESHO has ~40 and LENSKART ~44. Even norm=0
+# would not admit MEESHO, so the recent listings are a daily-only affair and
+# the weekly board honestly says so rather than drawing them on a stub.
 WEEKLY = {"n_short": 10, "n_long": 30, "norm": 100, "tail": 12,
           "vol_win": 26, "ann": 52, "ret_win": 12}
 
