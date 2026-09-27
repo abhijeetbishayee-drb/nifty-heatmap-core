@@ -1,4 +1,34 @@
-"""Shared Yahoo Finance fetch + gainers/losers logic for the Nifty Heatmap web and Android apps."""
+"""Shared Yahoo Finance fetch + gainers/losers logic for the Nifty Heatmap web and Android apps.
+
+WHICH NAMES EACH SURFACE COVERS - read this before adding or moving a ticker.
+There are two universes here, not one, and they are deliberately different:
+
+  NIFTY50   50 names. Backs the Nifty 50 board on web (index.html) AND the
+            Android app, which reads ONLY this path - NIFTY50, INDICES,
+            fetch_all, build_rows, compute_movers, nse_url, short_name. The
+            Android app does not import FNO_SECTORS and shows no sectors and
+            no RRG, so sector taxonomy changes do not affect it.
+
+  FNO_ALL   227 names, flattened from FNO_SECTORS (23 sectors). Backs the F&O
+            sector board (sectors.html) and the Relative Rotation board
+            (rrg.html). NIFTY50 is a strict subset, which is why one Yahoo
+            sweep feeds every board at no extra cost.
+
+A name added to FNO_SECTORS therefore reaches BOTH F&O surfaces automatically
+and the Nifty/Android surface not at all. The RRG build asserts this: every
+FNO_ALL name must be plotted or excluded with a printed reason, or the build
+fails. Its plotted count is legitimately LOWER than the heatmap's - a name
+without enough history to share the common normalisation window is excluded
+rather than drawn on a shorter one (see rrg.py) - so compare
+plotted + excluded, not plotted alone.
+
+PROPAGATION IS MANUAL. Each consumer pins this package as a git submodule, so
+a change here reaches nobody until that repo's pointer is bumped:
+    cd nifty-heatmap-core && git pull origin main && cd ..
+    git add nifty-heatmap-core && git commit
+Check the Android app's call shapes still hold before bumping it; it is the
+consumer most likely to be left behind, and the one nobody notices.
+"""
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
