@@ -30,8 +30,12 @@ from datetime import datetime, timezone
 
 # n_short / n_long smooth the relative-strength line; norm is the common
 # z-score window; tail is how many trailing points the chart draws.
-DAILY = {"n_short": 10, "n_long": 30, "norm": 250, "tail": 12}
-WEEKLY = {"n_short": 10, "n_long": 30, "norm": 100, "tail": 12}
+# vol_win / ann drive the Z axis of the 3D view: trailing realised volatility
+# over vol_win bars, annualised by sqrt(ann).
+DAILY = {"n_short": 10, "n_long": 30, "norm": 250, "tail": 12,
+         "vol_win": 60, "ann": 252}
+WEEKLY = {"n_short": 10, "n_long": 30, "norm": 100, "tail": 12,
+          "vol_win": 26, "ann": 52}
 
 
 def min_bars(cfg):
@@ -91,6 +95,30 @@ def rrg_tail(values, bench, cfg):
     if n < 2:
         return None
     return [(round(r, 3), round(q, 3)) for r, q in zip(ratio[-n:], mom[-n:])]
+
+
+def vol_tail(values, cfg, n):
+    """Trailing annualised realised volatility, as a % , for the last `n` bars.
+
+    One value per RRG tail point rather than a single headline number, so a 3D
+    trail moves on the volatility axis too instead of implying that volatility
+    was constant across the tail.
+
+    Returns None if there is not enough history for a full window at every
+    point - a partial window would make the earliest tail points noisier than
+    the latest ones, which is the same window-comparability problem the module
+    docstring describes for the z-score.
+    """
+    win, ann = cfg["vol_win"], cfg["ann"]
+    rets = [values[i] / values[i - 1] - 1
+            for i in range(1, len(values)) if values[i - 1]]
+    if len(rets) < win + n - 1:
+        return None
+    out = []
+    for end in range(len(rets) - n + 1, len(rets) + 1):
+        w = rets[end - win:end]
+        out.append(round(100 * st.pstdev(w) * (ann ** 0.5), 2))
+    return out
 
 
 def equal_weight_series(series_list):
