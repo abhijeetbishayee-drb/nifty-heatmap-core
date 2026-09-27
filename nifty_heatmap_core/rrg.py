@@ -178,6 +178,74 @@ def ret_tail(values, cfg, n):
     return out
 
 
+# ── Outlier constituents ─────────────────────────────────────────────────
+# An equal-weighted basket is one name away from being a story about that one
+# name: POLICYBZR fell 36% on the IRDAI commission paper (2026-09-24) and
+# dragged a 7-member New Age basket from -2.1% to -5.3% by itself. The
+# ex-outlier variant answers the other question - what the REST of the sector
+# is doing - without hiding anything: the outlier keeps its own point on the
+# stocks view either way.
+#
+# TWO tests, and each one exists because the other fails alone. Measured
+# across all 23 sectors on 2026-09-27:
+#
+#  1. SECTOR test, 3 MAD from the sector median. Alone it flagged 22 names in
+#     13 sectors, including HDFCBANK, RELIANCE, ULTRACEMCO, HCLTECH and
+#     TECHM. MAD collapses in a tightly clustered sector (Information
+#     Technology 1.18, Construction Materials 0.44), so "3 MAD" becomes a
+#     couple of percent and perfectly ordinary names fall outside it.
+#
+#  2. BOARD test, 4 robust sigma from the median of every constituent on the
+#     board for that timeframe. This is the scale check, and it must be
+#     CALIBRATED FROM THE DATA rather than hard-coded. A fixed 15-point floor
+#     worked on daily and then flagged 8 of 23 sectors on weekly, because a
+#     12-week return is spread about 2.3x wider than a 12-day one - the same
+#     class of mistake as normalising two symbols over different windows.
+#     Deriving the floor from the board's own dispersion fixes that: it comes
+#     out at 16.0 points on daily and 36.2 on weekly, automatically.
+#
+# Together they leave 2 names of 225 on daily (POLICYBZR -36.1% against a
+# -2.1% sector median, next nearest -3.9%; PATANJALI +18.1% against +0.5%,
+# next nearest +7.2%) and 2 of 215 on weekly (CYIENTDLM +82.8%, KALYANKJIL
+# +50.0%). The choice of 4 sigma is not delicate - 3.0 to 4.5 all give the
+# same answer on daily. The rule is symmetric, so it catches the upside
+# outliers too, and the variant is IDENTICAL to the ordinary basket in 21 of
+# 23 sectors, which is what makes it worth showing: it differs only where
+# there is genuinely something to see.
+OUTLIER_SECTOR_MAD = 3.0
+OUTLIER_BOARD_SIGMA = 4.0
+MAD_TO_SIGMA = 1.4826       # normal-consistent estimator
+
+
+def _mad(vals):
+    m = st.median(vals)
+    return st.median([abs(v - m) for v in vals])
+
+
+def outlier_indices(returns, board_returns,
+                    k_sector=OUTLIER_SECTOR_MAD, k_board=OUTLIER_BOARD_SIGMA):
+    """Positions of constituents doing something categorically different.
+
+    `returns` is one trailing return per constituent over the window the
+    basket covers; `board_returns` is the same measure for every constituent
+    on the board, which is what makes the scale test transfer between daily
+    and weekly. None entries are ignored and never flagged. Needs at least
+    four usable values, below which "the median constituent" means nothing.
+    """
+    usable = [(i, r) for i, r in enumerate(returns) if r is not None]
+    board = [r for r in board_returns if r is not None]
+    if len(usable) < 4 or len(board) < 20:
+        return []
+    vals = [r for _, r in usable]
+    med, spread = st.median(vals), _mad(vals)
+    b_med, b_sigma = st.median(board), _mad(board) * MAD_TO_SIGMA
+    if spread <= 0 or b_sigma <= 0:
+        return []
+    return [i for i, r in usable
+            if abs(r - med) > k_sector * spread
+            and abs(r - b_med) > k_board * b_sigma]
+
+
 def equal_weight_series(series_list):
     """Synthetic equal-weighted index from constituent close series that are
     already aligned on identical dates. Each constituent is rebased to 100 at
