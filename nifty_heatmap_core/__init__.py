@@ -448,6 +448,44 @@ def build_sectors(rows):
             for sector, srows in by_sector.items()]
 
 
+# ── Four broad industries, grouping the 23 sectors ──────────────────────────
+# Used by the RRG's 3D view to draw one connecting line per industry, so a
+# whole industry can be followed through the rotation instead of 23 separate
+# points. Grouped by what actually drives the names - the demand they sell
+# into - rather than by exchange classification, and kept to four so the lines
+# stay readable.
+#
+# The judgement calls, stated because they are arguable rather than obvious:
+#   - Realty sits in Rate-Sensitive, not Industrials: it trades on interest
+#     rates and credit availability far more than on construction activity.
+#   - Oil & Gas and Power sit in Industrials & Energy, with Metals, because
+#     they move on commodity and capex cycles.
+#   - New Age Stocks sits in Consumer: Eternal, Swiggy, Nykaa and Meesho are
+#     consumption plays whatever their technology; Information Technology is
+#     services exported to enterprises, which is a different demand driver.
+#   - Healthcare and CDMO sit together under Healthcare & Technology because
+#     both are defensive, research-led and largely export-facing.
+BROAD_INDUSTRIES = {
+    "Financials": [
+        "Banks", "NBFCs", "Financial Services",
+    ],
+    "Consumer": [
+        "Fast Moving Consumer Goods", "Consumer Durables", "Consumer Services",
+        "Automobile and Auto Components", "Textiles", "New Age Stocks",
+    ],
+    "Industrials & Energy": [
+        "Capital Goods", "Defence", "Construction", "Construction Materials",
+        "Metals & Mining", "Chemicals", "Oil Gas & Consumable Fuels", "Power",
+    ],
+    "Healthcare & Technology": [
+        "Healthcare", "CDMO", "Information Technology", "Telecommunication",
+        "Services", "Realty",
+    ],
+}
+
+INDUSTRY_OF = {sec: ind for ind, secs in BROAD_INDUSTRIES.items() for sec in secs}
+
+
 # ── Real NSE sectoral indices, mapped onto the watchlist's sector groups ─────
 # Only mappings where the index's composition genuinely matches the group are
 # listed. Every ticker below was verified to return a live name plus a real
