@@ -33,6 +33,7 @@ consumer most likely to be left behind, and the one nobody notices.
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .corporate_actions import live_adjustment
+from .rrg import outlier_indices, HEATMAP_MIN_GAP
 
 import requests
 
@@ -380,17 +381,40 @@ def constituent_range(rows):
 
 
 
-def summarize_group(name, srows):
+def summarize_group(name, srows, board_pcts=None):
     """Aggregate a set of rows into the block shape the boards render:
     equal-weighted average, breadth counts, constituent day range and the rows
     sorted by session change. Used for both sectors and the pinned index
-    groups so the two can never diverge."""
+    groups so the two can never diverge.
+
+    An equal-weighted average is one name away from being a story about that
+    one name, so where a constituent is doing something categorically
+    different the block also carries an average without it. `avgPctEx` is
+    emitted ONLY when such a name exists, so the ordinary average stands
+    untouched on the overwhelming majority of days and the two readings agree
+    wherever there is nothing to see.
+    """
     vals = [r["pct"] for r in srows if r.get("pct") is not None]
     avg = sum(vals) / len(vals) if vals else None
+
+    ex_avg, ex_names, ex_basis = None, None, None
+    if board_pcts and avg is not None:
+        pcts = [r.get("pct") for r in srows]
+        ex = outlier_indices(pcts, board_pcts, min_gap=HEATMAP_MIN_GAP)
+        kept = [p for i, p in enumerate(pcts)
+                if i not in ex and p is not None]
+        if ex and len(kept) >= 2:
+            ex_avg = sum(kept) / len(kept)
+            ex_names = [srows[i]["name"] for i in ex]
+            ex_basis = len(kept)
+
     return {
         "sector": name,
         "count": len(srows),
         "avgPct": avg,
+        "avgPctEx": ex_avg,
+        "exOutliers": ex_names,
+        "exBasis": ex_basis,
         "constituentRange": constituent_range(srows),
         "up": sum(1 for v in vals if v > 0),
         "down": sum(1 for v in vals if v < 0),
@@ -417,7 +441,11 @@ def build_sectors(rows):
         if sector is not None:
             by_sector[sector].append(r)
 
-    return [summarize_group(sector, srows) for sector, srows in by_sector.items()]
+    # every constituent on the board, so the outlier test has a reference for
+    # what an ordinary session looks like today
+    board_pcts = [r["pct"] for r in rows if r.get("pct") is not None]
+    return [summarize_group(sector, srows, board_pcts)
+            for sector, srows in by_sector.items()]
 
 
 # ── Real NSE sectoral indices, mapped onto the watchlist's sector groups ─────

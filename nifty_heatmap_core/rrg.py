@@ -223,7 +223,8 @@ def _mad(vals):
 
 
 def outlier_indices(returns, board_returns,
-                    k_sector=OUTLIER_SECTOR_MAD, k_board=OUTLIER_BOARD_SIGMA):
+                    k_sector=OUTLIER_SECTOR_MAD, k_board=OUTLIER_BOARD_SIGMA,
+                    min_gap=0.0):
     """Positions of constituents doing something categorically different.
 
     `returns` is one trailing return per constituent over the window the
@@ -231,6 +232,14 @@ def outlier_indices(returns, board_returns,
     on the board, which is what makes the scale test transfer between daily
     and weekly. None entries are ignored and never flagged. Needs at least
     four usable values, below which "the median constituent" means nothing.
+
+    `min_gap` is an extra absolute floor in the same units, for callers whose
+    dispersion is too STABLE for a derived threshold to mean anything - the
+    heatmap boards, see HEATMAP_MIN_GAP. It is measured against the SECTOR
+    median, not the board's: the concern is one name dragging its own peers,
+    and when a whole sector moves together nobody should be flagged. Measured
+    against the board median instead, a sector-wide 16% fall would have
+    flagged its most extreme member for no good reason.
     """
     usable = [(i, r) for i, r in enumerate(returns) if r is not None]
     board = [r for r in board_returns if r is not None]
@@ -243,7 +252,8 @@ def outlier_indices(returns, board_returns,
         return []
     return [i for i, r in usable
             if abs(r - med) > k_sector * spread
-            and abs(r - b_med) > k_board * b_sigma]
+            and abs(r - b_med) > k_board * b_sigma
+            and abs(r - med) >= min_gap]
 
 
 def equal_weight_series(series_list):
@@ -271,3 +281,30 @@ def quadrant(ratio, mom):
     if ratio >= 100:
         return "Leading" if mom >= 100 else "Weakening"
     return "Improving" if mom >= 100 else "Lagging"
+
+
+# The live heatmap boards average a SINGLE SESSION's change, and that needs a
+# different scale test from the RRG's multi-period returns. Measured on the
+# live board 2026-09-27: session dispersion is small and stable - robust sigma
+# 0.99 points across 227 names - so the derived 4-sigma threshold comes out at
+# only 3.98 points and flags whatever happened to fall furthest that day
+# (FORTIS -4.5%, MEESHO -6.8%). Those are the day's biggest movers, which is
+# precisely what the board exists to show; stripping them would repeat the
+# mistake of "fixing" a real crash.
+#
+# So intraday takes an absolute floor instead, calibrated on 112,164
+# close-to-close sessions over 2 years across all 227 names:
+#     6pp fires 3.82 times a trading day      15pp fires 0.12
+#     8pp            1.35                     20pp            0.03
+#    10pp            0.56                     25pp            0.01
+# 15 points fires about once every eight sessions - rare enough to mean
+# something, and comfortably below the genuine events it must catch, all of
+# which cleared 22%: POLICYBZR -36.0% (IRDAI commission paper), IEX -29.6%
+# (market coupling), INDUSINDBK -27.2% (accounting), ADANIENT -22.6%
+# (Hindenburg). Corporate-action gaps never reach this test - they are
+# repaired upstream in corporate_actions.py.
+#
+# The sector test still applies and does real work here: when a WHOLE sector
+# moves together - PSU banks on an election result - no name diverges from its
+# peers, nothing is flagged, and the average correctly stands.
+HEATMAP_MIN_GAP = 15.0
