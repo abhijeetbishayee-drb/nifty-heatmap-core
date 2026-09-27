@@ -190,3 +190,95 @@ def live_adjustment(ticker, price, prev, today=None):
         out["pct"] = 100 * (price / adj_prev - 1)
         out["pts"] = price - adj_prev
     return out
+
+
+# ── Build-time warnings ──────────────────────────────────────────────────
+# The live path only works if an event is in the table BEFORE its ex-date, so
+# the table going stale is the one failure mode that silently disables it.
+# These emit nothing on an ordinary day - the price build runs every minute
+# and a standing message would be scrolled past and stop being read.
+UPCOMING_HORIZON = 10          # calendar days of notice
+
+
+def upcoming(today=None, horizon=UPCOMING_HORIZON):
+    """(ticker, spec, days_away) for listed actions due within `horizon`."""
+    today = today or datetime.now(timezone.utc).date()
+    out = []
+    for ticker, spec in CORPORATE_ACTIONS.items():
+        ex = spec.get("exDate")
+        if not ex:
+            continue
+        days = (date.fromisoformat(ex) - today).days
+        if 0 <= days <= horizon:
+            out.append((ticker, spec, days))
+    return sorted(out, key=lambda x: x[2])
+
+
+def armed(today=None):
+    """Listed actions still in the future - what the table actually protects
+    against. An all-historical table protects against nothing."""
+    today = today or datetime.now(timezone.utc).date()
+    return [(t, s) for t, s in CORPORATE_ACTIONS.items()
+            if s.get("exDate") and date.fromisoformat(s["exDate"]) > today]
+
+
+def live_warnings(rows, today=None, horizon=UPCOMING_HORIZON):
+    """Lines a live build should print. Empty when nothing needs attention.
+
+    Three things are worth saying, and nothing else:
+      UPCOMING - an ex-date is near, so the entry can still be checked while
+                 there is time to correct it
+      APPLIED  - an adjustment fired, so the change on the board is explained
+      MISSED   - an ex-date is TODAY and nothing fired, which means the entry
+                 is wrong (ratio or date) and the board is showing the raw
+                 cliff right now. The observed move is included so the ratio
+                 can be corrected from the log alone.
+    """
+    today = today or datetime.now(timezone.utc).date()
+    by_ticker = {r.get("ticker"): r for r in rows or []}
+    lines = []
+
+    for ticker, spec, days in upcoming(today, horizon):
+        if days == 0:
+            continue
+        lines.append(
+            f"  UPCOMING: {ticker} goes ex {spec['what']} in {days} day(s) "
+            f"({spec['exDate']}, ratio {spec['ratio']:.4f}, {spec['kind']}). "
+            + ("An adjusted % will be shown." if spec["kind"] == "cosmetic"
+               else "It will read NA and leave its sector average."))
+
+    for ticker, spec in CORPORATE_ACTIONS.items():
+        row = by_ticker.get(ticker)
+        if row is None:
+            continue
+        ca = row.get("ca")
+        ex = spec.get("exDate")
+        if ca:
+            shown = (f"adjusted to {row['pct']:+.2f}%" if ca.get("adjusted")
+                     else "NA")
+            note = "" if ex == str(today) else f" (listed ex-date {ex})"
+            lines.append(f"  APPLIED: {ticker} ex {spec['what']} — raw "
+                         f"{ca['rawPct']:+.2f}% shown as {shown}{note}")
+        elif ex == str(today):
+            pct = row.get("pct")
+            seen = f"{pct:+.2f}%" if pct is not None else "no quote"
+            lines.append(
+                f"  MISSED: {ticker} is listed ex {spec['what']} TODAY "
+                f"({ex}) but no adjustment fired — the board is showing the "
+                f"raw print. Observed {seen} against an expected ratio of "
+                f"{spec['ratio']:.4f}; check the date and the ratio.")
+    return lines
+
+
+def table_status(today=None):
+    """One-line summary for a daily build: is anything actually armed?"""
+    today = today or datetime.now(timezone.utc).date()
+    live = armed(today)
+    if live:
+        nxt = min(live, key=lambda x: x[1]["exDate"])
+        return (f"corporate-action table: {len(CORPORATE_ACTIONS)} entries, "
+                f"{len(live)} still ahead; next {nxt[0]} on {nxt[1]['exDate']}")
+    return (f"corporate-action table: {len(CORPORATE_ACTIONS)} entries, all "
+            "historical — history is repaired, but nothing is armed for a "
+            "future ex-date, so a new action would print raw on the day. "
+            "Entries must be added BEFORE the ex-date to have any effect.")
