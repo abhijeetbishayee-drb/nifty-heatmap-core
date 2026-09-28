@@ -66,6 +66,11 @@ HEADERS = {
 # futures/options. The UI marks their tiles so a cash-only name is never
 # mistaken for something you can take a derivatives position in.
 CASH_ONLY = frozenset({
+    # Pharmaceuticals additions 2026-09-28 - none of the five has F&O
+    # contracts. Verified against Kite with SUNPHARMA as a positive control
+    # (165 contracts) while each of these returned none.
+    "ABBOTINDIA.NS", "IPCALAB.NS", "GRANULES.NS", "NATCOPHARM.NS",
+    "JBCHEPHARM.NS",
     "BEML.NS", "GRSE.NS", "DATAPATTNS.NS", "ZENTEC.NS", "PARAS.NS",
     "ASTRAMICRO.NS", "MTARTECH.NS", "CYIENTDLM.NS", "MEESHO.NS", "LENSKART.NS",
     "SYNGENE.NS", "PPLPHARMA.NS", "ARVIND.NS", "PGIL.NS", "GOKEX.NS",
@@ -214,99 +219,111 @@ def compute_movers(rows, n=5):
 # F&O-tradable total to 210.
 FNO_SECTORS = {
     "Automobile and Auto Components": [
-        "MARUTI.NS", "M&M.NS", "BAJAJ-AUTO.NS", "EICHERMOT.NS", "TVSMOTOR.NS", "HYUNDAI.NS",
-        "MOTHERSON.NS", "BOSCHLTD.NS", "TMPV.NS", "HEROMOTOCO.NS", "BHARATFORG.NS",
-        "UNOMINDA.NS", "ATHERENERG.NS", "TIINDIA.NS", "SONACOMS.NS", "FORCEMOT.NS",
+        "MARUTI.NS", "M&M.NS", "BAJAJ-AUTO.NS", "EICHERMOT.NS", "TVSMOTOR.NS",
+        "HYUNDAI.NS", "MOTHERSON.NS", "BOSCHLTD.NS", "TMPV.NS",
+        "HEROMOTOCO.NS", "BHARATFORG.NS", "UNOMINDA.NS", "ATHERENERG.NS",
+        "TIINDIA.NS", "SONACOMS.NS", "FORCEMOT.NS"
     ],
     "Banks": [
-        "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS", "AXISBANK.NS",
-        "INDUSINDBK.NS", "BANKBARODA.NS", "PNB.NS", "CANBK.NS", "UNIONBANK.NS", "INDIANB.NS",
-        "FEDERALBNK.NS", "AUBANK.NS", "IDFCFIRSTB.NS", "YESBANK.NS", "MAHABANK.NS",
-        "BANKINDIA.NS", "RBLBANK.NS", "BANDHANBNK.NS",
+        "HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "KOTAKBANK.NS",
+        "AXISBANK.NS", "INDUSINDBK.NS", "BANKBARODA.NS", "PNB.NS", "CANBK.NS",
+        "UNIONBANK.NS", "INDIANB.NS", "FEDERALBNK.NS", "AUBANK.NS",
+        "IDFCFIRSTB.NS", "YESBANK.NS", "MAHABANK.NS", "BANKINDIA.NS",
+        "RBLBANK.NS", "BANDHANBNK.NS"
     ],
     "NBFCs": [
-        "BAJFINANCE.NS", "SHRIRAMFIN.NS", "CHOLAFIN.NS", "MUTHOOTFIN.NS", "MANAPPURAM.NS",
-        "PFC.NS", "RECLTD.NS", "IRFC.NS", "IREDA.NS", "LTF.NS", "SBICARD.NS", "PNBHOUSING.NS",
-        "LICHSGFIN.NS", "JIOFIN.NS", "ABCAPITAL.NS", "BAJAJHLDNG.NS",
+        "BAJFINANCE.NS", "SHRIRAMFIN.NS", "CHOLAFIN.NS", "MUTHOOTFIN.NS",
+        "MANAPPURAM.NS", "PFC.NS", "RECLTD.NS", "IRFC.NS", "IREDA.NS",
+        "LTF.NS", "SBICARD.NS", "PNBHOUSING.NS", "LICHSGFIN.NS", "JIOFIN.NS",
+        "ABCAPITAL.NS", "BAJAJHLDNG.NS"
     ],
     "Financial Services": [
-        "LICI.NS", "BAJAJFINSV.NS", "SBILIFE.NS", "HDFCLIFE.NS", "HDFCAMC.NS", "MCX.NS",
-        "NAM-INDIA.NS", "ICICIGI.NS", "ICICIPRULI.NS", "MOTILALOFS.NS", "MFSL.NS",
-        "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS", "IEX.NS", "BSE.NS", "CDSL.NS",
-        "360ONE.NS",
+        "LICI.NS", "BAJAJFINSV.NS", "SBILIFE.NS", "HDFCLIFE.NS", "HDFCAMC.NS",
+        "MCX.NS", "NAM-INDIA.NS", "ICICIGI.NS", "ICICIPRULI.NS",
+        "MOTILALOFS.NS", "MFSL.NS", "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS",
+        "IEX.NS", "BSE.NS", "CDSL.NS", "360ONE.NS"
     ],
     "Capital Goods": [
-        "ABB.NS", "BHEL.NS", "CGPOWER.NS", "CUMMINSIND.NS", "SIEMENS.NS", "POWERINDIA.NS",
-        "POLYCAB.NS", "GVT&D.NS", "ASHOKLEY.NS", "WAAREEENER.NS", "SUZLON.NS", "APLAPOLLO.NS",
-        "SUPREMEIND.NS", "KEI.NS", "PREMIERENE.NS", "ASTRAL.NS", "KAYNES.NS", "INOXWIND.NS",
+        "ABB.NS", "BHEL.NS", "CGPOWER.NS", "CUMMINSIND.NS", "SIEMENS.NS",
+        "POWERINDIA.NS", "POLYCAB.NS", "GVT&D.NS", "ASHOKLEY.NS",
+        "WAAREEENER.NS", "SUZLON.NS", "APLAPOLLO.NS", "SUPREMEIND.NS",
+        "KEI.NS", "PREMIERENE.NS", "ASTRAL.NS", "KAYNES.NS", "INOXWIND.NS"
     ],
     "Defence": [
-        "HAL.NS", "BEL.NS", "MAZDOCK.NS", "BDL.NS", "COCHINSHIP.NS", "SOLARINDS.NS", "BEML.NS",
-        "GRSE.NS", "DATAPATTNS.NS", "ZENTEC.NS", "PARAS.NS", "ASTRAMICRO.NS", "MTARTECH.NS",
-        "CYIENTDLM.NS",
+        "HAL.NS", "BEL.NS", "MAZDOCK.NS", "BDL.NS", "COCHINSHIP.NS",
+        "SOLARINDS.NS", "BEML.NS", "GRSE.NS", "DATAPATTNS.NS", "ZENTEC.NS",
+        "PARAS.NS", "ASTRAMICRO.NS", "MTARTECH.NS", "CYIENTDLM.NS"
     ],
     "Chemicals": [
-        "PIDILITIND.NS", "SRF.NS", "UPL.NS", "PIIND.NS",
+        "PIDILITIND.NS", "SRF.NS", "UPL.NS", "PIIND.NS"
     ],
     "Construction": [
-        "LT.NS", "RVNL.NS", "NBCC.NS",
+        "LT.NS", "RVNL.NS", "NBCC.NS"
     ],
     "Construction Materials": [
-        "ULTRACEMCO.NS", "GRASIM.NS", "AMBUJACEM.NS", "SHREECEM.NS",
+        "ULTRACEMCO.NS", "GRASIM.NS", "AMBUJACEM.NS", "SHREECEM.NS"
     ],
     "Consumer Durables": [
-        "TITAN.NS", "ASIANPAINT.NS", "DIXON.NS", "HAVELLS.NS", "KALYANKJIL.NS", "VOLTAS.NS",
-        "BLUESTARCO.NS", "AMBER.NS", "PGEL.NS", "CROMPTON.NS",
+        "TITAN.NS", "ASIANPAINT.NS", "DIXON.NS", "HAVELLS.NS",
+        "KALYANKJIL.NS", "VOLTAS.NS", "BLUESTARCO.NS", "AMBER.NS", "PGEL.NS",
+        "CROMPTON.NS"
     ],
     "Consumer Services": [
-        "DMART.NS", "TRENT.NS", "INDHOTEL.NS", "NAUKRI.NS", "VMM.NS", "JUBLFOOD.NS",
+        "DMART.NS", "TRENT.NS", "INDHOTEL.NS", "NAUKRI.NS", "VMM.NS",
+        "JUBLFOOD.NS"
     ],
     "New Age Stocks": [
-        "ETERNAL.NS", "SWIGGY.NS", "PAYTM.NS", "MEESHO.NS", "LENSKART.NS", "NYKAA.NS",
-        "POLICYBZR.NS",
+        "ETERNAL.NS", "SWIGGY.NS", "PAYTM.NS", "MEESHO.NS", "LENSKART.NS",
+        "NYKAA.NS", "POLICYBZR.NS"
     ],
     "Fast Moving Consumer Goods": [
-        "HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS", "VBL.NS", "BRITANNIA.NS", "MARICO.NS",
-        "UNITDSPR.NS", "TATACONSUM.NS", "GODREJCP.NS", "DABUR.NS", "RADICO.NS", "COLPAL.NS",
-        "PATANJALI.NS", "GODFRYPHLP.NS",
+        "HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS", "VBL.NS", "BRITANNIA.NS",
+        "MARICO.NS", "UNITDSPR.NS", "TATACONSUM.NS", "GODREJCP.NS",
+        "DABUR.NS", "RADICO.NS", "COLPAL.NS", "PATANJALI.NS", "GODFRYPHLP.NS"
     ],
-    "Healthcare": [
-        "SUNPHARMA.NS", "TORNTPHARM.NS", "APOLLOHOSP.NS", "ZYDUSLIFE.NS", "CIPLA.NS",
-        "MAXHEALTH.NS", "AUROPHARMA.NS", "DRREDDY.NS", "LUPIN.NS", "MANKIND.NS", "GLENMARK.NS",
-        "FORTIS.NS", "BIOCON.NS", "ALKEM.NS",
+    "Pharmaceuticals": [
+        "SUNPHARMA.NS", "TORNTPHARM.NS", "ZYDUSLIFE.NS", "CIPLA.NS",
+        "AUROPHARMA.NS", "DRREDDY.NS", "LUPIN.NS", "MANKIND.NS",
+        "GLENMARK.NS", "BIOCON.NS", "ALKEM.NS", "ABBOTINDIA.NS", "IPCALAB.NS",
+        "GRANULES.NS", "NATCOPHARM.NS", "JBCHEPHARM.NS"
+    ],
+    "Hospitals": [
+        "APOLLOHOSP.NS", "MAXHEALTH.NS", "FORTIS.NS"
     ],
     "CDMO": [
-        "DIVISLAB.NS", "LAURUSLABS.NS", "SYNGENE.NS", "PPLPHARMA.NS",
+        "DIVISLAB.NS", "LAURUSLABS.NS", "SYNGENE.NS", "PPLPHARMA.NS"
     ],
     "Information Technology": [
-        "TCS.NS", "INFY.NS", "HCLTECH.NS", "WIPRO.NS", "TECHM.NS", "LTM.NS", "OFSS.NS",
-        "PERSISTENT.NS", "COFORGE.NS", "MPHASIS.NS", "TATAELXSI.NS", "SAGILITY.NS",
-        "KPITTECH.NS",
+        "TCS.NS", "INFY.NS", "HCLTECH.NS", "WIPRO.NS", "TECHM.NS", "LTM.NS",
+        "OFSS.NS", "PERSISTENT.NS", "COFORGE.NS", "MPHASIS.NS",
+        "TATAELXSI.NS", "SAGILITY.NS", "KPITTECH.NS"
     ],
     "Metals & Mining": [
-        "ADANIENT.NS", "JSWSTEEL.NS", "HINDZINC.NS", "TATASTEEL.NS", "HINDALCO.NS",
-        "JINDALSTEL.NS", "VEDL.NS", "SAIL.NS", "NMDC.NS", "NATIONALUM.NS", "HINDCOPPER.NS",
-        "VAML.NS",
+        "ADANIENT.NS", "JSWSTEEL.NS", "HINDZINC.NS", "TATASTEEL.NS",
+        "HINDALCO.NS", "JINDALSTEL.NS", "VEDL.NS", "SAIL.NS", "NMDC.NS",
+        "NATIONALUM.NS", "HINDCOPPER.NS", "VAML.NS"
     ],
     "Oil Gas & Consumable Fuels": [
-        "RELIANCE.NS", "ONGC.NS", "COALINDIA.NS", "IOC.NS", "BPCL.NS", "GAIL.NS", "OIL.NS",
-        "HINDPETRO.NS", "PETRONET.NS",
+        "RELIANCE.NS", "ONGC.NS", "COALINDIA.NS", "IOC.NS", "BPCL.NS",
+        "GAIL.NS", "OIL.NS", "HINDPETRO.NS", "PETRONET.NS"
     ],
     "Power": [
-        "ADANIPOWER.NS", "NTPC.NS", "POWERGRID.NS", "ADANIGREEN.NS", "ADANIENSOL.NS",
-        "TATAPOWER.NS", "JSWENERGY.NS", "NHPC.NS",
+        "ADANIPOWER.NS", "NTPC.NS", "POWERGRID.NS", "ADANIGREEN.NS",
+        "ADANIENSOL.NS", "TATAPOWER.NS", "JSWENERGY.NS", "NHPC.NS"
     ],
     "Realty": [
-        "DLF.NS", "LODHA.NS", "PHOENIXLTD.NS", "PRESTIGE.NS", "OBEROIRLTY.NS", "GODREJPROP.NS",
+        "DLF.NS", "LODHA.NS", "PHOENIXLTD.NS", "PRESTIGE.NS", "OBEROIRLTY.NS",
+        "GODREJPROP.NS"
     ],
     "Services": [
-        "ADANIPORTS.NS", "INDIGO.NS", "GMRAIRPORT.NS", "CONCOR.NS", "DELHIVERY.NS",
+        "ADANIPORTS.NS", "INDIGO.NS", "GMRAIRPORT.NS", "CONCOR.NS",
+        "DELHIVERY.NS"
     ],
     "Telecommunication": [
-        "BHARTIARTL.NS", "IDEA.NS", "INDUSTOWER.NS",
+        "BHARTIARTL.NS", "IDEA.NS", "INDUSTOWER.NS"
     ],
     "Textiles": [
-        "PAGEIND.NS", "ARVIND.NS", "PGIL.NS", "GOKEX.NS",
+        "PAGEIND.NS", "ARVIND.NS", "PGIL.NS", "GOKEX.NS"
     ],
 }
 
@@ -463,8 +480,8 @@ def build_sectors(rows):
 #   - New Age Stocks sits in Consumer: Eternal, Swiggy, Nykaa and Meesho are
 #     consumption plays whatever their technology; Information Technology is
 #     services exported to enterprises, which is a different demand driver.
-#   - Healthcare and CDMO sit together under Healthcare & Technology because
-#     both are defensive, research-led and largely export-facing.
+#   - Pharmaceuticals, Hospitals and CDMO sit together under Healthcare &
+#     Technology: defensive, research-led and largely export-facing.
 BROAD_INDUSTRIES = {
     "Financials": [
         "Banks", "NBFCs", "Financial Services",
@@ -478,7 +495,8 @@ BROAD_INDUSTRIES = {
         "Metals & Mining", "Chemicals", "Oil Gas & Consumable Fuels", "Power",
     ],
     "Healthcare & Technology": [
-        "Healthcare", "CDMO", "Information Technology", "Telecommunication",
+        "Pharmaceuticals", "Hospitals", "CDMO", "Information Technology",
+        "Telecommunication",
         "Services", "Realty",
     ],
 }
@@ -514,7 +532,11 @@ SECTOR_INDICES = {
     "Fast Moving Consumer Goods": {"ticker": "^CNXFMCG", "label": "NIFTY FMCG"},
     "Banks": {"ticker": "^NSEBANK", "label": "NIFTY BANK"},
     "Defence": {"ticker": "NIFTY_IND_DEFENCE.NS", "label": "NIFTY IND DEFENCE"},
-    "Healthcare": {"ticker": "NIFTY_HEALTHCARE.NS", "label": "NIFTY HEALTHCARE"},
+    # Healthcare was split into Pharmaceuticals and Hospitals on 2026-09-28,
+    # and NIFTY HEALTHCARE spans BOTH - it holds the hospital chains as well as
+    # the drug makers. Mapping it to either half would be exactly the
+    # composition mismatch this table exists to avoid, so neither gets it: both
+    # fall back to a constituent-derived range and say "No sectoral Index".
     "Information Technology": {"ticker": "^CNXIT", "label": "NIFTY IT"},
     "Metals & Mining": {"ticker": "^CNXMETAL", "label": "NIFTY METAL"},
     "Oil Gas & Consumable Fuels": {"ticker": "NIFTY_OIL_AND_GAS.NS", "label": "NIFTY OIL & GAS"},
