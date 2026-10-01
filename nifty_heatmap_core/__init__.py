@@ -217,6 +217,25 @@ def compute_movers(rows, n=5):
 # name was 360ONE, found by diffing this taxonomy against the NSE F&O bhavcopy's
 # own stock-futures list. Added below, bringing Financial Services to 18 and the
 # F&O-tradable total to 210.
+#
+# 2026-10-01: the same diff, run again against the 30 Sep bhavcopy (213 stock
+# underlyings), found THREE more - and this time they were not copy losses, they
+# were NSE additions for the October series: their earliest contract is the
+# 2026-10-27 expiry and none of them appears in the 25 Aug bhavcopy.
+#
+#   UJJIVANSFB  Ujjivan Small Finance Bank   -> Banks
+#               (AUBANK, also a small finance bank, is already there)
+#   ANANDRATHI  Anand Rathi Wealth           -> Financial Services
+#               (with 360ONE, MOTILALOFS, ANGELONE, HDFCAMC)
+#   ENRIN       Siemens Energy India         -> Capital Goods
+#               (POWERINDIA, ex-Hitachi Energy India, is the same business and
+#                sits in Capital Goods, not Power; SIEMENS and ABB likewise)
+#
+# F&O-tradable total 210 -> 213.
+#
+# SYRMA (Syrma SGS) is NOT absent by mistake: it has no stock futures in that
+# bhavcopy at all, so it is not an F&O name. It is on the 44 EMA board, which
+# covers NSE ranks 1-750.
 FNO_SECTORS = {
     "Automobile and Auto Components": [
         "MARUTI.NS", "M&M.NS", "BAJAJ-AUTO.NS", "EICHERMOT.NS", "TVSMOTOR.NS",
@@ -229,7 +248,7 @@ FNO_SECTORS = {
         "AXISBANK.NS", "INDUSINDBK.NS", "BANKBARODA.NS", "PNB.NS", "CANBK.NS",
         "UNIONBANK.NS", "INDIANB.NS", "FEDERALBNK.NS", "AUBANK.NS",
         "IDFCFIRSTB.NS", "YESBANK.NS", "MAHABANK.NS", "BANKINDIA.NS",
-        "RBLBANK.NS", "BANDHANBNK.NS"
+        "RBLBANK.NS", "BANDHANBNK.NS", "UJJIVANSFB.NS"
     ],
     "NBFCs": [
         "BAJFINANCE.NS", "SHRIRAMFIN.NS", "CHOLAFIN.NS", "MUTHOOTFIN.NS",
@@ -241,13 +260,14 @@ FNO_SECTORS = {
         "LICI.NS", "BAJAJFINSV.NS", "SBILIFE.NS", "HDFCLIFE.NS", "HDFCAMC.NS",
         "MCX.NS", "NAM-INDIA.NS", "ICICIGI.NS", "ICICIPRULI.NS",
         "MOTILALOFS.NS", "MFSL.NS", "ANGELONE.NS", "CAMS.NS", "KFINTECH.NS",
-        "IEX.NS", "BSE.NS", "CDSL.NS", "360ONE.NS"
+        "IEX.NS", "BSE.NS", "CDSL.NS", "360ONE.NS", "ANANDRATHI.NS"
     ],
     "Capital Goods": [
         "ABB.NS", "BHEL.NS", "CGPOWER.NS", "CUMMINSIND.NS", "SIEMENS.NS",
         "POWERINDIA.NS", "POLYCAB.NS", "GVT&D.NS", "ASHOKLEY.NS",
         "WAAREEENER.NS", "SUZLON.NS", "APLAPOLLO.NS", "SUPREMEIND.NS",
-        "KEI.NS", "PREMIERENE.NS", "ASTRAL.NS", "KAYNES.NS", "INOXWIND.NS"
+        "KEI.NS", "PREMIERENE.NS", "ASTRAL.NS", "KAYNES.NS", "INOXWIND.NS",
+        "ENRIN.NS"
     ],
     "Defence": [
         "HAL.NS", "BEL.NS", "MAZDOCK.NS", "BDL.NS", "COCHINSHIP.NS",
