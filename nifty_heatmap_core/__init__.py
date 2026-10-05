@@ -82,6 +82,12 @@ def short_name(ticker):
     return ticker.replace(".NS", "").replace("-", "")[:10]
 
 
+def full_name(ticker):
+    """Company name for display under the ticker (None if unknown)."""
+    from .company_names import COMPANY_NAMES
+    return COMPANY_NAMES.get(ticker.replace(".NS", ""))
+
+
 def nse_url(ticker):
     symbol = ticker.replace(".NS", "")
     return f"https://www.nseindia.com/get-quotes/equity?symbol={symbol}"
@@ -173,6 +179,7 @@ def build_rows(tickers, stocks, today=None):
         rows.append({
             "ticker": ticker,
             "name": short_name(ticker),
+            "full": full_name(ticker),
             "price": price,
             "pct": pct,
             "pts": pts,
