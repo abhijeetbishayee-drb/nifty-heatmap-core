@@ -1,0 +1,51 @@
+name: Refresh NIFTY 50 constituents
+
+# NSE reconstitutes the index semi-annually, but announces and applies changes
+# on its own calendar, so the only safe cadence is "check every day and do
+# nothing when nothing changed". The script is a no-op on an unchanged list,
+# so a late or duplicate run costs a single CSV fetch.
+#
+# Deliberately NOT on the day's close. This runs mid-session, hours before
+# nifty-heatmap-web's post-close job bumps its submodule pointer, so a
+# constituent change is already committed here by the time that job looks.
+# Schedule throttling cannot break that -- if this lands late, the web repo
+# simply picks the change up the following day.
+on:
+  schedule:
+    - cron: '30 5 * * 1-5'     # 11:00 IST, weekdays
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nifty50-refresh       # no cancel-in-progress: a rewrite must finish
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install -q requests
+
+      # Fails the run if NSE returns anything that is not recognisably the
+      # NIFTY 50 -- and writes nothing in that case, so the committed list
+      # stays correct rather than becoming wrong. A red run here is the alarm
+      # that used to be missing entirely.
+      - name: Refresh from NSE
+        run: python scripts/refresh_nifty50.py
+
+      - name: Commit if the index changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add nifty_heatmap_core/__init__.py
+          git diff --staged --quiet && { echo "no constituent change"; exit 0; }
+          git commit -m "NIFTY 50 reconstitution $(date -u +%F)"
+          git pull --rebase --autostash -q || true
+          git push
