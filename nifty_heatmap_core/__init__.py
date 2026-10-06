@@ -1,33 +1,53 @@
-"""Shared Yahoo Finance fetch + gainers/losers logic for the Nifty Heatmap web and Android apps.
+"""Shared Yahoo Finance fetch + gainers/losers logic for the Nifty Heatmap boards.
 
 WHICH NAMES EACH SURFACE COVERS - read this before adding or moving a ticker.
 There are two universes here, not one, and they are deliberately different:
 
-  NIFTY50   50 names. Backs the Nifty 50 board on web (index.html) AND the
-            Android app, which reads ONLY this path - NIFTY50, INDICES,
-            fetch_all, build_rows, compute_movers, nse_url, short_name. The
-            Android app does not import FNO_SECTORS and shows no sectors and
-            no RRG, so sector taxonomy changes do not affect it.
+  NIFTY50   50 names, DERIVED FROM NSE -- do not hand-edit. Backs the Nifty 50
+            board (index.html). Rewritten in place by
+            scripts/refresh_nifty50.py from NSE's own published constituent
+            file, which the web repo runs on every daily build, so a
+            reconstitution lands as an ordinary commit.
 
-  FNO_ALL   227 names, flattened from FNO_SECTORS (23 sectors). Backs the F&O
+            It was hand-maintained until 2026-10-06, and by then nine of the
+            fifty were wrong in both directions: the board carried BPCL,
+            BRITANNIA, DIVISLAB, HEROMOTOCO, INDUSINDBK, LTM, TVSMOTOR, UPL
+            and WIPRO, which NSE had dropped, and omitted BEL, BSE, ETERNAL,
+            INDIGO, JIOFIN, MAXHEALTH, SHRIRAMFIN, TMPV and TRENT, which it
+            had added. Every ranking and breadth count on that board was
+            computed over the wrong 50 for an unknown length of time, and
+            nothing could catch it because a stale ticker prices and renders
+            exactly like a current one. Hence: derived, asserted, never typed.
+
+  FNO_ALL   235 names, flattened from FNO_SECTORS (24 sectors). Backs the F&O
             sector board (sectors.html) and the Relative Rotation board
-            (rrg.html). NIFTY50 is a strict subset, which is why one Yahoo
-            sweep feeds every board at no extra cost.
+            (rrg.html). This one IS curated by hand -- NSE publishes no
+            "F&O universe by sector" file, and the sector a name belongs in is
+            our judgement, not NSE's. NIFTY50 is a strict subset, which is why
+            one Yahoo sweep feeds every board at no extra cost, and
+            refresh_nifty50.py refuses to write a list that breaks it.
 
-A name added to FNO_SECTORS therefore reaches BOTH F&O surfaces automatically
-and the Nifty/Android surface not at all. The RRG build asserts this: every
-FNO_ALL name must be plotted or excluded with a printed reason, or the build
-fails. Its plotted count is legitimately LOWER than the heatmap's - a name
-without enough history to share the common normalisation window is excluded
-rather than drawn on a shorter one (see rrg.py) - so compare
-plotted + excluded, not plotted alone.
+A name added to FNO_SECTORS therefore reaches both F&O surfaces automatically.
+The RRG build asserts this: every FNO_ALL name must be plotted or excluded
+with a printed reason, or the build fails. Its plotted count is legitimately
+LOWER than the heatmap's - a name without enough history to share the common
+normalisation window is excluded rather than drawn on a shorter one (see
+rrg.py) - so compare plotted + excluded, not plotted alone.
 
-PROPAGATION IS MANUAL. Each consumer pins this package as a git submodule, so
-a change here reaches nobody until that repo's pointer is bumped:
+THE ANDROID APP NO LONGER READS THIS PACKAGE. Until the 2026-10-03 rebuild it
+imported NIFTY50 directly and had to be rebuilt in step; it is now a WebView
+shell over the published site, so it inherits whatever the web boards show --
+including, until this was fixed, the wrong 50 - and inherits corrections with
+no APK release.
+
+PROPAGATION IS MANUAL. nifty-heatmap-web pins this package as a git submodule,
+so a change here reaches it only when its pointer is bumped:
     cd nifty-heatmap-core && git pull origin main && cd ..
     git add nifty-heatmap-core && git commit
-Check the Android app's call shapes still hold before bumping it; it is the
-consumer most likely to be left behind, and the one nobody notices.
+pnf-charts is the other consumer and does NOT use the submodule: it fetches
+this file over HTTP and AST-parses FNO_SECTORS and CASH_ONLY out of it without
+importing. Keep those two as plain literal assignments or you will break it
+silently from another repo.
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -38,16 +58,16 @@ from .rrg import outlier_indices, HEATMAP_MIN_GAP
 import requests
 
 NIFTY50 = [
-    "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS",
-    "HINDUNILVR.NS", "ITC.NS", "SBIN.NS", "BHARTIARTL.NS", "KOTAKBANK.NS",
-    "LT.NS", "AXISBANK.NS", "ASIANPAINT.NS", "MARUTI.NS", "HCLTECH.NS",
-    "SUNPHARMA.NS", "TITAN.NS", "ULTRACEMCO.NS", "BAJFINANCE.NS", "WIPRO.NS",
-    "ONGC.NS", "NTPC.NS", "POWERGRID.NS", "NESTLEIND.NS", "TECHM.NS",
-    "M&M.NS", "ADANIENT.NS", "ADANIPORTS.NS", "COALINDIA.NS", "JSWSTEEL.NS",
-    "TVSMOTOR.NS", "TATASTEEL.NS", "BAJAJFINSV.NS", "BPCL.NS", "DRREDDY.NS",
-    "CIPLA.NS", "EICHERMOT.NS", "HEROMOTOCO.NS", "INDUSINDBK.NS", "GRASIM.NS",
-    "APOLLOHOSP.NS", "BRITANNIA.NS", "DIVISLAB.NS", "TATACONSUM.NS", "SBILIFE.NS",
-    "HDFCLIFE.NS", "BAJAJ-AUTO.NS", "UPL.NS", "LTM.NS", "HINDALCO.NS",
+    "ADANIENT.NS", "ADANIPORTS.NS", "APOLLOHOSP.NS", "ASIANPAINT.NS", "AXISBANK.NS",
+    "BSE.NS", "BAJAJ-AUTO.NS", "BAJFINANCE.NS", "BAJAJFINSV.NS", "BEL.NS",
+    "BHARTIARTL.NS", "CIPLA.NS", "COALINDIA.NS", "DRREDDY.NS", "EICHERMOT.NS",
+    "ETERNAL.NS", "GRASIM.NS", "HCLTECH.NS", "HDFCBANK.NS", "HDFCLIFE.NS",
+    "HINDALCO.NS", "HINDUNILVR.NS", "ICICIBANK.NS", "ITC.NS", "INFY.NS",
+    "INDIGO.NS", "JSWSTEEL.NS", "JIOFIN.NS", "KOTAKBANK.NS", "LT.NS",
+    "M&M.NS", "MARUTI.NS", "MAXHEALTH.NS", "NTPC.NS", "NESTLEIND.NS",
+    "ONGC.NS", "POWERGRID.NS", "RELIANCE.NS", "SBILIFE.NS", "SHRIRAMFIN.NS",
+    "SBIN.NS", "SUNPHARMA.NS", "TCS.NS", "TATACONSUM.NS", "TMPV.NS",
+    "TATASTEEL.NS", "TECHM.NS", "TITAN.NS", "TRENT.NS", "ULTRACEMCO.NS",
 ]
 
 INDICES = {
