@@ -321,7 +321,7 @@ FNO_SECTORS = {
     ],
     "New Age Stocks": [
         "ETERNAL.NS", "SWIGGY.NS", "PAYTM.NS", "MEESHO.NS", "LENSKART.NS",
-        "NYKAA.NS", "POLICYBZR.NS"
+        "NYKAA.NS", "POLICYBZR.NS", "DELHIVERY.NS"
     ],
     "Fast Moving Consumer Goods": [
         "HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS", "VBL.NS", "BRITANNIA.NS",
@@ -363,8 +363,7 @@ FNO_SECTORS = {
         "GODREJPROP.NS"
     ],
     "Services": [
-        "ADANIPORTS.NS", "INDIGO.NS", "GMRAIRPORT.NS", "CONCOR.NS",
-        "DELHIVERY.NS"
+        "ADANIPORTS.NS", "INDIGO.NS", "GMRAIRPORT.NS", "CONCOR.NS"
     ],
     "Telecommunication": [
         "BHARTIARTL.NS", "IDEA.NS", "INDUSTOWER.NS"
