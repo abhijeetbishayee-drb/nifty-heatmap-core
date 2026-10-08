@@ -73,6 +73,7 @@ NIFTY50 = [
 INDICES = {
     "^NSEI": "nifty",
     "^NSEBANK": "banknifty",
+    "^CNXPSUBANK": "psubank",
 }
 
 HEADERS = {
@@ -556,7 +557,8 @@ INDUSTRY_OF = {sec: ind for ind, secs in BROAD_INDUSTRIES.items() for sec in sec
 # regularMarketDayHigh/Low. Deliberately NOT mapped, because no NSE index
 # matches the group's actual constituents:
 #   Capital Goods, CDMO, Construction, Consumer Services, Financial Services,
-#   NBFCs, New Age Stocks, Power, Services, Telecommunication, Textiles
+#   Hospitals, NBFCs, New Age Stocks, Power, Services, Telecommunication,
+#   Textiles
 #
 # "Financial Services" deliberately LOST its NIFTY FIN SERVICE mapping on
 # 2026-09-22 when Banks and NBFCs were split out: that index is ~70% banks, so
@@ -578,11 +580,16 @@ SECTOR_INDICES = {
     "Fast Moving Consumer Goods": {"ticker": "^CNXFMCG", "label": "NIFTY FMCG"},
     "Banks": {"ticker": "^NSEBANK", "label": "NIFTY BANK"},
     "Defence": {"ticker": "NIFTY_IND_DEFENCE.NS", "label": "NIFTY IND DEFENCE"},
-    # Healthcare was split into Pharmaceuticals and Hospitals on 2026-09-28,
-    # and NIFTY HEALTHCARE spans BOTH - it holds the hospital chains as well as
-    # the drug makers. Mapping it to either half would be exactly the
-    # composition mismatch this table exists to avoid, so neither gets it: both
-    # fall back to a constituent-derived range and say "No sectoral Index".
+    # Healthcare was split into Pharmaceuticals and Hospitals on 2026-09-28.
+    # NIFTY HEALTHCARE spans BOTH - it holds the hospital chains as well as the
+    # drug makers - so mapping it to either half would be the composition
+    # mismatch this table exists to avoid, and neither half gets it.
+    #
+    # NIFTY PHARMA is a different index and does match: drug makers only, which
+    # is exactly what this group holds. It was missed on 2026-09-28 because the
+    # split only considered NIFTY HEALTHCARE. Hospitals still has no index of
+    # its own and keeps the constituent-derived range.
+    "Pharmaceuticals": {"ticker": "^CNXPHARMA", "label": "NIFTY PHARMA"},
     "Information Technology": {"ticker": "^CNXIT", "label": "NIFTY IT"},
     "Metals & Mining": {"ticker": "^CNXMETAL", "label": "NIFTY METAL"},
     "Oil Gas & Consumable Fuels": {"ticker": "NIFTY_OIL_AND_GAS.NS", "label": "NIFTY OIL & GAS"},
@@ -620,11 +627,26 @@ BANKNIFTY = [
     "IDFCFIRSTB.NS", "AUBANK.NS",
 ]
 
+# NIFTY PSU BANK, same arrangement. The Banks sector holds private and public
+# lenders together and NIFTY BANK is the mixed index that matches it, so the
+# PSU half had nowhere to show: a PSU-only SECTOR would have split a group that
+# trades as one, while a pinned group adds the index without touching the
+# taxonomy. These 8 are the index's constituents that exist in FNO_ALL;
+# CENTRALBK, IOB, PSB and UCOBANK are left out because they have no F&O
+# contracts, exactly as BANKNIFTY above is the F&O-tradable part of its index.
+# The group average is therefore over what we hold, beside the real index.
+PSUBANK = [
+    "SBIN.NS", "BANKBARODA.NS", "PNB.NS", "CANBK.NS", "UNIONBANK.NS",
+    "INDIANB.NS", "BANKINDIA.NS", "MAHABANK.NS",
+]
+
 PINNED_GROUPS = [
     {"name": "NIFTY 50", "tickers": NIFTY50, "index_key": "nifty",
      "label": "NIFTY 50", "ticker": "^NSEI"},
     {"name": "BANK NIFTY", "tickers": BANKNIFTY, "index_key": "banknifty",
      "label": "NIFTY BANK", "ticker": "^NSEBANK"},
+    {"name": "PSU BANK", "tickers": PSUBANK, "index_key": "psubank",
+     "label": "NIFTY PSU BANK", "ticker": "^CNXPSUBANK"},
 ]
 
 
